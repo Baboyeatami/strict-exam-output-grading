@@ -1,0 +1,71 @@
+{
+  "exam": {
+    "title": "EMATH 100 Make-Up Quiz (synthetic fixture)",
+    "max": 20,
+    "excluded": ["video (5 points, removed from denominator)"]
+  },
+  "criteria": [
+    { "id": "q1_bisect", "question": "Q1", "max": 5 },
+    { "id": "q1_newton", "question": "Q1", "max": 5 },
+    { "id": "q2_secant", "question": "Q2", "max": 5 },
+    { "id": "q2_falsepos", "question": "Q2", "max": 5 }
+  ],
+  "students": [
+    {
+      "name": "Jane Alpha",
+      "status": "scored",
+      "scores": { "q1_bisect": 5, "q1_newton": 5, "q2_secant": 5, "q2_falsepos": 5 },
+      "total": 20,
+      "percent": 100.0,
+      "notes": "Report table and workbook both show full iteration values."
+    },
+    {
+      "name": "John Beta",
+      "status": "scored",
+      "scores": { "q1_bisect": 5, "q1_newton": 5, "q2_secant": 0, "q2_falsepos": 0 },
+      "total": 10,
+      "percent": 50.0,
+      "notes": "Q2 is a prose claim with no iteration values; no workbook submitted."
+    },
+    {
+      "name": "Charlie Cruz",
+      "status": "scored",
+      "scores": { "q1_bisect": 5, "q1_newton": 5, "q2_secant": 5, "q2_falsepos": 0 },
+      "total": 15,
+      "percent": 75.0,
+      "notes": "Nested folder; Q2(b) stated as not completed."
+    },
+    {
+      "name": "Dana Gamma",
+      "status": "scored",
+      "scores": { "q1_bisect": 5, "q1_newton": 5, "q2_secant": 5, "q2_falsepos": 5 },
+      "total": 20,
+      "percent": 100.0,
+      "notes": "Duplicate version in _duplicates counted once."
+    },
+    {
+      "name": "Elle Delta",
+      "status": "pending",
+      "scores": {},
+      "total": null,
+      "percent": null,
+      "notes": "Only a video submission; video excluded as instructed. Not a zero."
+    },
+    {
+      "name": "Frank Echo",
+      "status": "pending",
+      "scores": {},
+      "total": null,
+      "percent": null,
+      "notes": "No file submission found after recursive folder traversal."
+    },
+    {
+      "name": "Unidentified (unknown_submission.docx)",
+      "status": "pending",
+      "scores": {},
+      "total": null,
+      "percent": null,
+      "notes": "No reliable identity match; held pending rather than guessed."
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "exam": "EMATH 100 Make-Up Quiz (synthetic fixture)",
+  "denominator": 20,
+  "scored": {
+    "Alpha": 20,
+    "Beta": 10,
+    "Cruz": 15,
+    "Gamma": 20
+  },
+  "pending_count": 3,
+  "pending_reasons": {
+    "Delta": "only a video submission; video excluded, so no scorable evidence",
+    "Echo": "no submission found in the results folder",
+    "unknown_submission": "no reliable identity match; do not guess or borrow evidence"
+  },
+  "notes": "Scored keys are matched case-insensitively as substrings of student names. Do not score excluded video points and do not include them in the denominator."
+}
