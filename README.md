@@ -2,33 +2,53 @@
 
 An OpenCode skill for grading student exam submissions strictly against an
 instructor-supplied rubric, using the files in a results folder as the only
-evidence. It works for **any exam** as long as you provide:
+evidence. It works for **any exam** — you just provide the exam questions and
+rubric, then the folder of student outputs.
 
-1. the exam questions/instructions,
-2. the rubric with criteria and points, and
-3. a folder containing the student results (nested folders are fine).
+The skill builds the scoring profile from the instructor's rubric
+automatically (in the canonical format described below), validates the
+arithmetic, and only then grades. Weights from one exam are never reused for
+another; the EDA/EMATH 311 profile in `references/` is only a completed
+example.
 
-The skill defines the grading **process**; each exam's weights and criteria
-come from a rubric profile you fill for that exam. The EDA/EMATH 311 profile
-in `references/` is one completed example — its weights are never applied to
-another exam.
+---
+
+## How it works
+
+1. **You provide the questions + rubric** (files or pasted text; the rubric
+   may be a separate file or embedded in the questions document, in docx,
+   xlsx, pdf, md, or text form).
+2. **The skill builds and validates the scoring profile**: it extracts the
+   rubric, converts it into the canonical profile format, runs the arithmetic
+   gate (`check_gradebook.py profile`), and reports a compact summary —
+   questions, criteria, maximum, excluded points, gate result.
+   - Explicit rubric + passing gate → grading proceeds automatically.
+   - Missing points, unmapped criteria, unclear exclusions, or failing
+     arithmetic → the skill stops and asks instead of guessing.
+3. **You provide the folder of student outputs** (nested folders are fine).
+4. **The skill grades**: inventory and attribution, evidence extraction,
+   independent verification, criterion scoring, reconciliation, gradebook
+   and feedback — all written to `./grading-run/` (overridable), never into
+   your results folder.
 
 ---
 
 ## Contents
 
 ```
-.opencode/skills/strict-exam-output-grading/
-  SKILL.md                    workflow: inputs, readiness gate, scoring, deliverables
-  references/
-    rubric-profile-template.md        fill one per exam (required before grading)
-    eda-numerical-methods-profile.md  completed example (EMATH 311)
-    provider-adapter.md               harness mapping incl. OpenCode + JSON shapes
-  scripts/
-    extract_text.py           stdlib text dump: docx, xlsx, pdf, ipynb, text
-    check_gradebook.py        profile arithmetic + gradebook/expected validation
+.opencode/
+  command/grade-exam.md       one-line slash command for the whole flow
+  skills/strict-exam-output-grading/
+    SKILL.md                  intake, readiness gate, workflow, scoring rules
+    references/
+      rubric-profile-template.md      canonical profile format (auto-built)
+      eda-numerical-methods-profile.md  completed example (EMATH 311)
+      provider-adapter.md             harness mapping incl. OpenCode + JSON shapes
+    scripts/
+      extract_text.py         stdlib text dump: docx, xlsx, pdf, ipynb, text
+      check_gradebook.py      profile arithmetic + gradebook/expected validation
 validation/
-  fixture-exam/               synthetic exam, good + broken rubric, roster
+  fixture-exam/               synthetic exam, raw + canonical rubric, roster
   expected_scores.json        fixture ground truth
   expected_gradebook.json     canonical gradebook shape
   make_fixtures.py            regenerates the synthetic results folder
@@ -40,204 +60,190 @@ validation/
 
 ## Install
 
-**Option A — this repo.** The skill is already discoverable by OpenCode when
-you run OpenCode from this repository. Quit and restart OpenCode first
-(skills load at startup; they are not hot-reloaded), then ask it to grade an
-exam.
+**Option A — this repo.** The skill and `/grade-exam` command are already
+discoverable by OpenCode when you run OpenCode from this repository. Quit and
+restart OpenCode first (skills and commands load at startup; they are not
+hot-reloaded).
 
-**Option B — one project.** Copy the skill folder:
+**Option B — one project.** Copy the skill folder (and the command, if
+wanted):
 
 ```bash
-mkdir -p /path/to/project/.opencode/skills
+mkdir -p /path/to/project/.opencode/skills /path/to/project/.opencode/command
 cp -R .opencode/skills/strict-exam-output-grading /path/to/project/.opencode/skills/
+cp .opencode/command/grade-exam.md /path/to/project/.opencode/command/
 ```
 
 Restart OpenCode in that project. No `opencode.json` change is needed.
 
-**Option C — all projects (global).** Copy the folder to the global skills
-directory instead:
+**Option C — all projects (global).** Copy the skill folder to the global
+skills directory instead:
 
 ```bash
 mkdir -p ~/.config/opencode/skills
 cp -R .opencode/skills/strict-exam-output-grading ~/.config/opencode/skills/
 ```
 
-Restart OpenCode.
+Restart OpenCode. (The `/grade-exam` command is project-scoped; use the
+skill directly in other projects, or copy the command into that project.)
 
-**Other harnesses (Claude Code, Codex, etc.).** Use `strict-exam-output-grading.zip`
-or the folder contents as skill/context files. The grading rules are
-model-agnostic; only the tool mapping changes. See
-`references/provider-adapter.md`.
+**Other harnesses (Claude Code, Codex, etc.).** Use
+`strict-exam-output-grading.zip` or the folder contents as skill/context
+files. The grading rules are model-agnostic; only the tool mapping changes.
+See `references/provider-adapter.md`.
 
 ---
 
 ## Quick start
 
-### 1. Prepare the three inputs
+### 1. Call the skill
 
-You need a questions source, a rubric, and a results folder. A typical exam
-folder looks like this:
-
-```
-exam-2026/
-  questions.pdf          # or .md/.docx — the exam prompt/instructions
-  rubric.xlsx            # or .md/.docx/.pdf — criteria and points
-  roster.csv             # optional but recommended: name,section
-  results/               # the results folder
-    JaneDoe_Q1_Report.docx
-    JaneDoe_Workbook.xlsx
-    Group3/
-      report.pdf
-      workbook.xlsx
-```
-
-The results folder may be flat, nested, contain group submissions, or hold
-duplicate versions — the skill handles all of these, but it needs to be able
-to read the files (local path, or a path mounted/synced to disk).
-
-### 2. Fill one rubric profile
-
-The profile is the single source of truth for the run. Copy
-`.opencode/skills/strict-exam-output-grading/references/rubric-profile-template.md`
-to your exam folder (e.g. `exam-2026/profile.md`) and fill it from the
-instructor's rubric. Minimum requirements:
-
-- One row per scored criterion in this exact table format:
-
-  ```
-  | Question | Criterion id | Criterion | Points | Evidence expected |
-  |---|---|---|---|---|
-  | Q1 | q1_a | Bisection: iteration values and final root | 5 | workbook or report table |
-  ```
-
-- Declared totals on their own lines, matching the rubric:
-
-  ```
-  - Declared total: 20
-  - Declared Q1 total: 10
-  - Declared Q2 total: 10
-  ```
-
-- Excluded evidence types and the denominator rule, for example:
-  "video demo (5 points) excluded — removed from the maximum, never scored as
-  zero."
-
-You can ask OpenCode to draft the profile from your rubric files; **verify
-the declared totals yourself** — they must come from the instructor's rubric,
-not from the criteria table.
-
-Check the arithmetic before grading:
-
-```bash
-python3 .opencode/skills/strict-exam-output-grading/scripts/check_gradebook.py \
-  profile exam-2026/profile.md
-```
-
-`PASS` means every question's criteria sum to its declared total and the
-overall sum matches. `FAIL` means the rubric or the profile is inconsistent —
-fix it or ask the instructor before grading.
-
-### 3. Ask OpenCode to grade
-
-Example prompt:
+In OpenCode, ask naturally:
 
 > Grade the exams in `~/exams/emath311/results` using the questions in
-> `~/exams/emath311/questions.pdf` and the rubric profile in
-> `~/exams/emath311/profile.md`. Exclude the video demos. Write the gradebook
-> and feedback to `~/exams/emath311/out/`.
+> `~/exams/emath311/questions.pdf` and the rubric in
+> `~/exams/emath311/rubric.xlsx`. Exclude the video demos.
 
-What the skill does, in order:
+Or use the one-line command with the three inputs:
 
-1. **Readiness gate** — checks the profile arithmetic, that every criterion
-   maps to a question and an observable artifact, that the results folder is
-   readable, and that excluded-point handling is stated. Stops and reports
-   if something is wrong.
-2. **Inventory and attribution** — walks the folder recursively, records
-   every file (name, path, type, size, hash), matches files to the roster in
-   order (exact name → filename patterns → group evidence inside the file →
-   instructor confirmation), counts duplicates once, and keeps anything
-   uncertain as `pending`.
-3. **Evidence extraction** — reads each submission (docx, xlsx, pdf,
-   notebooks, images when permitted) with `scripts/extract_text.py`, keeping
-   provenance for every observation (file + sheet/cell/page/table/figure).
-   Excluded media is never opened.
-4. **Independent verification** — recomputes rubric-critical numbers from
-   the exam's own equations and compares them with the submitted report and
-   workbook; discrepancies are recorded with both values and locations.
-5. **Criterion scoring** — scores each rubric row, awards partial credit
-   where supported, cites evidence for every deduction, and never
-   double-penalizes one defect.
-6. **Reconciliation** — re-sums per question and overall, uses only included
-   criteria in the denominator, and keeps pending students out of the
-   aggregates.
-7. **Deliverables** — XLSX gradebook (with a numerical-checks sheet when
-   relevant) plus per-student feedback with concrete evidence; CSV +
-   Markdown if no spreadsheet writer is available. Any write is read back
-   and verified. A run manifest records inputs, hashes, assumptions,
-   overrides, and pending items.
+```
+/grade-exam ~/exams/emath311/questions.pdf ~/exams/emath311/rubric.xlsx ~/exams/emath311/results
+```
 
-### 4. Review the outputs
+Partial arguments are fine — the skill requests whatever is missing, in
+order. A typical interactive session:
 
-- **Gradebook** — one row per student: status (`scored`/`pending`), one
-  column per criterion, totals, percent, feedback reference, notes.
-- **Feedback** — student-specific, evidence-linked; length/format follows
-  your instructions (e.g. "two paragraphs per student").
-- **Pending list** — students or submissions the skill could not resolve
-  (missing file, ambiguous identity, excluded-only submission). Pending is
-  never a zero; resolve the question and ask for a re-check:
+```
+You:      grade my EDA exam
+Skill:    Please share the exam questions and rubric (files or text).
+You:      [questions.pdf] [rubric.xlsx] — video demos are excluded
+Skill:    Profile built from the rubric: 2 questions, 12 criteria, max 88
+          (video 12 pts excluded, not zeroed). Arithmetic gate passed.
+          Now share the folder with the student outputs.
+You:      ~/exams/emath311/results
+Skill:    [grades; writes grading-run/]
+```
 
-> Elle Delta submitted `Delta_final.docx` late — it's now in results/.
-> Re-check Elle Delta and update the gradebook.
+The skill pauses only for genuine ambiguity in the rubric — missing points,
+a criterion that cannot be mapped to a question or artifact, unclear
+exclusion handling, or failing arithmetic.
 
-### 5. Validate the gradebook (optional)
+### 2. Review the outputs
 
-If the run produced `gradebook.json` (the skill's internal format), you can
-verify it independently:
+Everything lands in `./grading-run/` (override with the destination you
+specify):
+
+```
+grading-run/
+  profile.md        built rubric profile (audit trail of criteria and points)
+  gradebook.xlsx    one row per student: status, per-criterion scores,
+                    totals, percent, notes (CSV + Markdown fallback)
+  gradebook.json    internal machine-readable format (validator-compatible)
+  feedback.md       per-student feedback with concrete evidence
+  manifest.md       inputs, hashes, assumptions, overrides, pending items
+```
+
+- **Pending** means the skill could not resolve something (missing file,
+  ambiguous identity, only-excluded-media submission). Pending is never a
+  zero. Resolve it and ask for a re-check:
+
+  > Elle Delta submitted `Delta_final.docx` late — it's now in results/.
+  > Re-check Elle Delta and update the gradebook.
+
+- **Feedback** is student-specific and evidence-linked; length and format
+  follow your instructions (e.g. "two paragraphs per student").
+
+### 3. Validate the gradebook (optional)
 
 ```bash
 python3 .opencode/skills/strict-exam-output-grading/scripts/check_gradebook.py \
-  gradebook exam-2026/out/gradebook.json
+  gradebook grading-run/gradebook.json
 ```
 
 Checks: exam maximum equals the sum of criterion maxima, scored students
 have every criterion, scores are within bounds, totals equal the sum of
 scores, percents match the denominator, and pending students carry no
 numeric values. Add `--expected expected_scores.json` to compare against a
-known ground truth (as the validation suite does).
+known ground truth.
 
 ---
 
-## Working with the rubric profile
+## What happens during a run
 
-The profile is the only exam-specific file. Everything else (workflow,
-evidence standard, pending rules) is reusable. Fields explained:
+1. **Intake** — questions + rubric extracted; canonical profile built from
+   the rubric's own criteria and points; arithmetic gate validated.
+2. **Inventory and attribution** — the results folder is traversed
+   recursively; every file is recorded (name, path, type, size, hash);
+   files are matched to the roster in order (exact name → filename patterns
+   → group evidence inside the file → instructor confirmation); duplicates
+   count once; anything uncertain stays `pending`.
+3. **Evidence extraction** — submissions are read with
+   `scripts/extract_text.py`, keeping provenance for every observation
+   (file + sheet/cell/page/table/figure). Excluded media is never opened.
+4. **Independent verification** — rubric-critical numbers are recomputed
+   from the exam's own equations and compared with the submitted report and
+   workbook; discrepancies are recorded with both values and locations.
+5. **Criterion scoring** — each rubric row is scored; deductions cite a
+   criterion and an evidence location; no double penalties; partial credit
+   where the rubric supports it.
+6. **Reconciliation** — per-question and overall sums re-checked with zero
+   tolerance; the denominator uses only included criteria; pending students
+   stay out of the aggregates.
+7. **Deliverables** — gradebook + feedback + profile + run manifest written,
+   read back, and verified.
 
-| Field | What it does |
-|---|---|
-| Questions/rubric source | Pointers so the run is auditable |
-| Results folder | The folder to traverse recursively |
-| Declared totals | Rubric maxima per question and overall — verified by the script |
-| Included/excluded evidence types | What may be opened and scored |
-| Denominator rule | How excluded points are handled (removed from max, never zeros) |
-| Rounding / percent policy | e.g. `percent = earned / adjusted max x 100` |
-| Criteria table | One row per criterion: question, unique id, points, evidence expected |
-| Scoring conventions | Partial credit, evidence standard, no-double-deduction, pending, attribution |
-| Gate | The verification command and its result |
+---
 
-Rules of thumb:
+## Advanced: overriding the profile
 
-- Criterion ids are unique, lowercase, no spaces (`q1_bisect`).
-- Subcriteria only when the instructor's rubric defines them; they must sum
-  exactly to the parent criterion's points.
-- Keep the table format exactly — `check_gradebook.py profile` parses it.
-- One profile per exam. Never reuse another exam's weights.
+Normally you never touch the profile — the skill builds it. Override it when
+you want to pre-approve the criteria mapping, correct a gate failure, or use
+a harness without the scripts:
+
+1. Copy
+   `.opencode/skills/strict-exam-output-grading/references/rubric-profile-template.md`
+   to your exam folder (e.g. `exam-2026/profile.md`).
+2. Fill it from the instructor's rubric. Required format:
+
+   ```
+   | Question | Criterion id | Criterion | Points | Evidence expected |
+   |---|---|---|---|---|
+   | Q1 | q1_a | Bisection: iteration values and final root | 5 | workbook or report table |
+   ```
+
+   plus declared totals on their own lines:
+
+   ```
+   - Declared total: 20
+   - Declared Q1 total: 10
+   - Declared Q2 total: 10
+   ```
+
+   and the exclusion rule ("video demo excluded — removed from the
+   maximum, never scored as zero").
+3. Verify before grading:
+
+   ```bash
+   python3 .opencode/skills/strict-exam-output-grading/scripts/check_gradebook.py \
+     profile exam-2026/profile.md
+   ```
+
+   `PASS` means every question's criteria sum to its declared total and the
+   overall sum matches. `FAIL` means the rubric or the profile is
+   inconsistent — fix it or ask the instructor before grading.
+
+Then point the skill at your profile, or simply include it with the other
+inputs. Rules of thumb: criterion ids are unique, lowercase, no spaces;
+subcriteria (only when the instructor's rubric defines them) must sum
+exactly to the parent's points; one profile per exam; keep the table format
+exactly as shown so the script can parse it.
 
 ---
 
 ## Scripts
 
-**`extract_text.py`** — dependency-free text extraction (uses only Python
-stdlib). Use it manually to inspect a submission the way the skill does:
+**`extract_text.py`** — dependency-free text extraction (Python stdlib
+only):
 
 ```bash
 python3 .opencode/skills/strict-exam-output-grading/scripts/extract_text.py \
@@ -252,11 +258,11 @@ are reported as not text-extractable.
 **`check_gradebook.py`** — two modes:
 
 ```bash
-# 1. Rubric profile arithmetic (run before grading)
+# 1. Rubric profile arithmetic (run during intake / before grading)
 python3 .../check_gradebook.py profile exam-2026/profile.md
 
 # 2. Gradebook validation, optionally against expected ground truth
-python3 .../check_gradebook.py gradebook exam-2026/out/gradebook.json \
+python3 .../check_gradebook.py gradebook grading-run/gradebook.json \
   [--expected exam-2026/expected_scores.json]
 ```
 
@@ -294,12 +300,12 @@ to XLSX/CSV for the instructor as the final deliverable.
   the denominator — not counted as zeros.
 - Missing, uncertain, or unattributable submissions stay pending (never
   zero, never silently dropped).
+- The skill never invents weights, criteria, totals, penalties, letter
+  grades, or pass cutoffs — only what the instructor's rubric states.
 - Every deduction cites a criterion and an evidence location; no double
   deductions; partial credit where the rubric supports it.
-- Nothing is written outside the requested deliverables, and every write is
-  read back and verified.
-- No letter grades, pass cutoffs, or penalties are invented — only what the
-  instructor's rubric states.
+- Nothing is written into the results folder, and every write is read back
+  and verified.
 - All fixtures in this repo are synthetic; keep real student data out of the
   repository.
 
@@ -317,5 +323,6 @@ python3 validation/run_validation.py     # all checks must print PASS
 The suite covers: profile arithmetic (good passes, broken fails), the EDA
 example profile (44 + 44 = 88), canonical gradebook vs expected scores,
 corrupted gradebook rejection, extraction of planted values in
-docx/xlsx/pdf, and untouched excluded media. `validation/checklist.md` lists
-the additional behaviors to verify in an agent grading run.
+docx/xlsx/pdf, raw-rubric extraction for intake, and untouched excluded
+media. `validation/checklist.md` lists the additional behaviors to verify in
+an agent grading run.

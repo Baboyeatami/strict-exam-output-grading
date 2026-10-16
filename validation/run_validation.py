@@ -82,6 +82,12 @@ def main():
     r = run(PY, EXTRACT, FIX / "results" / "Beta_John_Report.docx")
     check("docx extraction finds John Q2 prose", r.returncode == 0 and "about 2.09" in r.stdout)
 
+    r = run(PY, EXTRACT, FIX / "rubric.md")
+    check(
+        "raw instructor rubric extraction works",
+        r.returncode == 0 and "20 points" in r.stdout and "5 points" in r.stdout,
+    )
+
     mp4 = FIX / "results" / "delta_video.mp4"
     before = mp4.read_bytes()
     r = run(PY, EXTRACT, mp4)

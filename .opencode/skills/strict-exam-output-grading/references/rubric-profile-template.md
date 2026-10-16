@@ -1,8 +1,11 @@
-# Rubric profile template
+# Rubric profile (canonical format)
 
-Fill one profile per exam before grading. The profile is the source of truth
-for the run. Keep the table format exactly as shown so
-`scripts/check_gradebook.py profile <this file>` can verify the arithmetic.
+This is the canonical profile format. In normal use the skill builds it
+automatically from the instructor's rubric during intake; fill it by hand only
+to override the auto-built profile or when working in a harness without the
+scripts. The profile is the source of truth for the run. Keep the table format
+exactly as shown so `scripts/check_gradebook.py profile <this file>` can
+verify the arithmetic.
 
 ## Exam identity
 

@@ -38,6 +38,12 @@ rubric profile, evidence standard, and scoring process unchanged.
 - Text extraction: `python3 scripts/extract_text.py <file>...` (stdlib only;
   handles docx, xlsx, pdf with uncompressed or FlateDecode text, ipynb, and
   plain-text formats). For images, inspect visually only when permitted.
+- Intake: extract the supplied rubric (any supported format) with
+  `extract_text.py`; draft `grading-run/profile.md` from the canonical
+  template using only the rubric's own criteria and points; validate with
+  `check_gradebook.py profile` before touching submissions. Default output
+  directory: `./grading-run/` (overridable). Never write into the results
+  folder.
 - Verification math: `python3` stdlib (`math`, `decimal`, `json`); recompute
   from raw values, never from the student's cached results alone.
 - Gradebook validation: `python3 scripts/check_gradebook.py gradebook

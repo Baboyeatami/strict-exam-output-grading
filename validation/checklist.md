@@ -17,6 +17,14 @@ below cover behavior that must also be verified in an agent grading run.
 
 ## Agent run (grading the fixture following SKILL.md)
 
+- [ ] UX: profile auto-built from `fixture-exam/rubric.md` (raw instructor
+      format) without needing the pre-filled `rubric-profile.md`; declared
+      totals copied from the rubric (total 20, Q1 10, Q2 10).
+- [ ] UX: arithmetic gate (`check_gradebook.py profile`) run and passed before
+      any submission was opened.
+- [ ] UX: built profile saved into the run directory (`grading-run/profile.md`
+      or the reported output directory).
+- [ ] UX: nothing written into `fixture-exam/results/`.
 - [ ] Readiness gate executed before scoring; scope and adjusted denominator
       (20, not 25) stated.
 - [ ] Excluded media type (video/mp4) not opened or scored; excluded points
