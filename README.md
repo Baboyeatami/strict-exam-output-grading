@@ -100,14 +100,14 @@ See `references/provider-adapter.md`.
 
 In OpenCode, ask naturally:
 
-> Grade the exams in `~/exams/emath311/results` using the questions in
-> `~/exams/emath311/questions.pdf` and the rubric in
-> `~/exams/emath311/rubric.xlsx`. Exclude the video demos.
+> Grade the exams in `exams/emath311/results` using the questions in
+> `exams/emath311/questions.pdf` and the rubric in
+> `exams/emath311/rubric.xlsx`. Exclude the video demos.
 
 Or use the one-line command with the three inputs:
 
 ```
-/grade-exam ~/exams/emath311/questions.pdf ~/exams/emath311/rubric.xlsx ~/exams/emath311/results
+/grade-exam exams/emath311/questions.pdf exams/emath311/rubric.xlsx exams/emath311/results
 ```
 
 Partial arguments are fine — the skill requests whatever is missing, in
@@ -120,7 +120,7 @@ You:      [questions.pdf] [rubric.xlsx] — video demos are excluded
 Skill:    Profile built from the rubric: 2 questions, 12 criteria, max 88
           (video 12 pts excluded, not zeroed). Arithmetic gate passed.
           Now share the folder with the student outputs.
-You:      ~/exams/emath311/results
+You:      exams/emath311/results
 Skill:    [grades; writes grading-run/]
 ```
 
