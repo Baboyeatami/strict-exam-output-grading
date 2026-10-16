@@ -3,8 +3,11 @@ description: Grade an exam from questions + rubric + a folder of student outputs
 agent: build
 ---
 
-Grade an exam using the `strict-exam-output-grading` skill. First read and
-follow `.opencode/skills/strict-exam-output-grading/SKILL.md`.
+Grade an exam using the `strict-exam-output-grading` skill.
+
+First locate the skill folder: use `.opencode/skills/strict-exam-output-grading/`
+in this project if it exists, otherwise `~/.config/opencode/skills/strict-exam-output-grading/`.
+Read and follow its `SKILL.md`; its scripts live under that folder's `scripts/`.
 
 User-provided arguments (may be partial or empty):
 $ARGUMENTS
@@ -16,7 +19,7 @@ Intake rules:
 - If inputs are missing, request them in that order and wait. Do not start
   grading with a missing input.
 - Build the rubric profile from the instructor's rubric automatically,
-  validate it with `.opencode/skills/strict-exam-output-grading/scripts/check_gradebook.py profile`,
+  validate it with `<skill>/scripts/check_gradebook.py profile`,
   and continue automatically when the rubric is explicit and the gate passes.
   Stop and ask only for genuine ambiguity (missing points, unmapped criteria,
   unclear exclusions, or arithmetic failure).

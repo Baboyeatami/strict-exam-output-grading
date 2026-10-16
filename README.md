@@ -76,16 +76,16 @@ cp .opencode/command/grade-exam.md /path/to/project/.opencode/command/
 
 Restart OpenCode in that project. No `opencode.json` change is needed.
 
-**Option C — all projects (global).** Copy the skill folder to the global
-skills directory instead:
+**Option C — all projects (global).** Install the skill and command globally:
 
 ```bash
-mkdir -p ~/.config/opencode/skills
+mkdir -p ~/.config/opencode/skills ~/.config/opencode/command
 cp -R .opencode/skills/strict-exam-output-grading ~/.config/opencode/skills/
+cp .opencode/command/grade-exam.md ~/.config/opencode/command/
 ```
 
-Restart OpenCode. (The `/grade-exam` command is project-scoped; use the
-skill directly in other projects, or copy the command into that project.)
+Restart OpenCode. The skill and `/grade-exam` then work from any project;
+the command locates the skill in the project or global directory.
 
 **Other harnesses (Claude Code, Codex, etc.).** Use
 `strict-exam-output-grading.zip` or the folder contents as skill/context
